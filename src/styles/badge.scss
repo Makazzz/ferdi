@@ -2,12 +2,9 @@
 
 .theme__dark .badge {
   background: $dark-theme-gray;
-  border-radius: $theme-border-radius-small;
   color: $dark-theme-gray-lightest;
-  margin-right: 10px;
 
-  &.badge--primary,
-  &.badge--premium {
+  &.badge--primary {
     background: $theme-brand-primary;
     color: $dark-theme-gray-lightest;
   }
@@ -22,8 +19,7 @@
   padding: 5px 10px;
   letter-spacing: 0;
 
-  &.badge--primary,
-  &.badge--premium {
+  &.badge--primary {
     background: $theme-brand-primary;
     color: #FFF;
   }

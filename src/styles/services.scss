@@ -7,7 +7,7 @@
 
   .services__webview,
   .services__info-layer {
-    webview { background: $dark-theme-gray-darkest; }
+    // webview { background: $dark-theme-gray-darkest; }
   }
 
   .services__no-service,
@@ -15,6 +15,24 @@
     background: $dark-theme-gray-darkest;
 
     h1 { color: $dark-theme-gray-lightest; }
+  }
+}
+
+.mode__split {
+  .services {
+    display: flex;
+    overflow: visible;
+
+    .services__webview {
+      position: relative;
+      flex: 1 0 33.3333%;
+    }
+  }
+
+  @for $i from $split-columns-min through $split-columns-max {
+    &[data-columns="#{$i}"] .services .services__webview {
+      flex-basis: calc(100% / $i);
+    }
   }
 }
 
@@ -48,6 +66,8 @@
     }
 
     &--force-repaint webview { z-index: 5; }
+
+    &.is-loading webview { background: #FFF }
   }
 
   .services__no-service,
@@ -69,7 +89,7 @@
   }
 
   .services__info-layer {
-    position: absolut;
+    position: absolute;
     z-index: 110;
   }
 

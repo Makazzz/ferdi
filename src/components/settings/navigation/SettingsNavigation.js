@@ -1,54 +1,48 @@
-import React, { Component } from 'react';
+import { Component } from 'react';
 import PropTypes from 'prop-types';
-import { defineMessages, intlShape } from 'react-intl';
+import { defineMessages, injectIntl } from 'react-intl';
 import { inject, observer } from 'mobx-react';
-import { ProBadge } from '@meetfranz/ui';
 import { RouterStore } from 'mobx-react-router';
 
-import { LOCAL_SERVER, LIVE_API } from '../../../config';
+import { LOCAL_SERVER, LIVE_FERDI_API, LIVE_FRANZ_API } from '../../../config';
 import Link from '../../ui/Link';
-import { workspaceStore } from '../../../features/workspaces';
 import UIStore from '../../../stores/UIStore';
 import SettingsStore from '../../../stores/SettingsStore';
 import UserStore from '../../../stores/UserStore';
-import { serviceLimitStore } from '../../../features/serviceLimit';
+import globalMessages from '../../../i18n/globalMessages';
 
 const messages = defineMessages({
   availableServices: {
     id: 'settings.navigation.availableServices',
-    defaultMessage: '!!!Available services',
+    defaultMessage: 'Available services',
   },
   yourServices: {
     id: 'settings.navigation.yourServices',
-    defaultMessage: '!!!Your services',
+    defaultMessage: 'Your services',
   },
   yourWorkspaces: {
     id: 'settings.navigation.yourWorkspaces',
-    defaultMessage: '!!!Your workspaces',
+    defaultMessage: 'Your workspaces',
   },
   account: {
     id: 'settings.navigation.account',
-    defaultMessage: '!!!Account',
+    defaultMessage: 'Account',
   },
   team: {
     id: 'settings.navigation.team',
-    defaultMessage: '!!!Manage Team',
-  },
-  settings: {
-    id: 'settings.navigation.settings',
-    defaultMessage: '!!!Settings',
+    defaultMessage: 'Manage Team',
   },
   supportFerdi: {
     id: 'settings.navigation.supportFerdi',
-    defaultMessage: '!!!Support Ferdi',
+    defaultMessage: 'About Ferdi',
   },
   logout: {
     id: 'settings.navigation.logout',
-    defaultMessage: '!!!Logout',
+    defaultMessage: 'Logout',
   },
 });
 
-export default @inject('stores', 'actions') @observer class SettingsNavigation extends Component {
+class SettingsNavigation extends Component {
   static propTypes = {
     stores: PropTypes.shape({
       ui: PropTypes.instanceOf(UIStore).isRequired,
@@ -57,55 +51,42 @@ export default @inject('stores', 'actions') @observer class SettingsNavigation e
       router: PropTypes.instanceOf(RouterStore).isRequired,
     }).isRequired,
     actions: PropTypes.shape({
-      settings: PropTypes.shape({
-        update: PropTypes.func.isRequired,
-      }).isRequired,
+      settings: PropTypes.instanceOf(SettingsStore).isRequired,
     }).isRequired,
     serviceCount: PropTypes.number.isRequired,
     workspaceCount: PropTypes.number.isRequired,
   };
 
-  static contextTypes = {
-    intl: intlShape,
-  };
+  handleLogout() {
+    const isUsingWithoutAccount =
+      this.props.stores.settings.app.server === LOCAL_SERVER;
 
-  handleLoginLogout() {
-    const isLoggedIn = Boolean(localStorage.getItem('authToken'));
-    const isUsingWithoutAccount = this.props.stores.settings.app.server === LOCAL_SERVER;
+    // Remove current auth token
+    localStorage.removeItem('authToken');
 
-    if (isLoggedIn) {
-      // Remove current auth token
-      localStorage.removeItem('authToken');
-
-      if (isUsingWithoutAccount) {
-        // Reset server back to Ferdi API
-        this.props.actions.settings.update({
-          type: 'app',
-          data: {
-            server: LIVE_API,
-          },
-        });
-      }
-      this.props.stores.user.isLoggingOut = true;
+    if (isUsingWithoutAccount) {
+      // Reset server back to Ferdi API
+      this.props.actions.settings.update({
+        type: 'app',
+        data: {
+          server: LIVE_FERDI_API,
+        },
+      });
     }
+    this.props.stores.user.isLoggingOut = true;
 
-    this.props.stores.router.push(isLoggedIn ? '/auth/logout' : '/auth/welcome');
+    this.props.stores.router.push('/auth/welcome');
 
-    if (isLoggedIn) {
-      // Reload Ferdi, otherwise many settings won't sync correctly with the server
-      // after logging into another account
-      window.location.reload();
-    }
+    // Reload Ferdi, otherwise many settings won't sync correctly with the server
+    // after logging into another account
+    window.location.reload();
   }
 
   render() {
     const { serviceCount, workspaceCount, stores } = this.props;
-    const { isDarkThemeActive } = stores.ui;
-    const { router, user } = stores;
-    const { intl } = this.context;
-    const isLoggedIn = Boolean(localStorage.getItem('authToken'));
+    const { intl } = this.props;
     const isUsingWithoutAccount = stores.settings.app.server === LOCAL_SERVER;
-    const isUsingFranzServer = stores.settings.app.server === 'https://api.franzinfra.com';
+    const isUsingFranzServer = stores.settings.app.server === LIVE_FRANZ_API;
 
     return (
       <div className="settings-navigation">
@@ -120,52 +101,34 @@ export default @inject('stores', 'actions') @observer class SettingsNavigation e
           to="/settings/services"
           className="settings-navigation__link"
           activeClassName="is-active"
-          disabled={!isLoggedIn}
         >
-          {intl.formatMessage(messages.yourServices)}
-          {' '}
-          <span className="badge">
-            {serviceCount}
-            {serviceLimitStore.serviceLimit !== 0 && (
-              `/${serviceLimitStore.serviceLimit}`
-            )}
-          </span>
+          {intl.formatMessage(messages.yourServices)}{' '}
+          <span className="badge">{serviceCount}</span>
         </Link>
-        {workspaceStore.isFeatureEnabled ? (
-          <Link
-            to="/settings/workspaces"
-            className="settings-navigation__link"
-            activeClassName="is-active"
-            disabled={!isLoggedIn}
-          >
-            {intl.formatMessage(messages.yourWorkspaces)}
-            {' '}
-            {workspaceStore.isPremiumUpgradeRequired ? (
-              <ProBadge inverted={!isDarkThemeActive && workspaceStore.isSettingsRouteActive} />
-            ) : (
-              <span className="badge">{workspaceCount}</span>
-            )}
-          </Link>
-        ) : null}
         <Link
-          to="/settings/user"
+          to="/settings/workspaces"
           className="settings-navigation__link"
           activeClassName="is-active"
-          disabled={!isLoggedIn}
         >
-          {intl.formatMessage(messages.account)}
+          {intl.formatMessage(messages.yourWorkspaces)}{' '}
+          <span className="badge">{workspaceCount}</span>
         </Link>
+        {!isUsingWithoutAccount && (
+          <Link
+            to="/settings/user"
+            className="settings-navigation__link"
+            activeClassName="is-active"
+          >
+            {intl.formatMessage(messages.account)}
+          </Link>
+        )}
         {isUsingFranzServer && (
           <Link
             to="/settings/team"
             className="settings-navigation__link"
             activeClassName="is-active"
-            disabled={!isLoggedIn}
           >
             {intl.formatMessage(messages.team)}
-            {!user.data.isPremium && (
-              <ProBadge inverted={!isDarkThemeActive && router.location.pathname === '/settings/team'} />
-            )}
           </Link>
         )}
         <Link
@@ -173,7 +136,12 @@ export default @inject('stores', 'actions') @observer class SettingsNavigation e
           className="settings-navigation__link"
           activeClassName="is-active"
         >
-          {intl.formatMessage(messages.settings)}
+          {intl.formatMessage(globalMessages.settings)}
+          {stores.settings.app.automaticUpdates && (stores.ui.showServicesUpdatedInfoBar ||
+            (stores.app.updateStatus === stores.app.updateStatusTypes.AVAILABLE ||
+              stores.app.updateStatus === stores.app.updateStatusTypes.DOWNLOADED)) && (
+            <span className="update-available">•</span>
+          )}
         </Link>
         <Link
           to="/settings/support"
@@ -185,13 +153,17 @@ export default @inject('stores', 'actions') @observer class SettingsNavigation e
         <span className="settings-navigation__expander" />
         <button
           type="button"
-          to={isLoggedIn ? '/auth/logout' : '/auth/welcome'}
+          to='/auth/logout'
           className="settings-navigation__link"
-          onClick={this.handleLoginLogout.bind(this)}
+          onClick={this.handleLogout.bind(this)}
         >
-          { isLoggedIn && !isUsingWithoutAccount ? intl.formatMessage(messages.logout) : 'Login'}
+          {!isUsingWithoutAccount
+            ? intl.formatMessage(messages.logout)
+            : 'Exit session'}
         </button>
       </div>
     );
   }
 }
+
+export default injectIntl(inject('stores', 'actions')(observer(SettingsNavigation)));
